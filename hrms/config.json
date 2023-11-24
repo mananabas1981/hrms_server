@@ -1,0 +1,16 @@
+{
+  "company_name": "MUNICIPALITY OF Ubay",
+  "brgy": "Poblacion",
+  "city": "Ubay",
+  "province": "Bohol",
+  "mysql_host": "localhost",
+  "mysql_port": "3306",
+  "mysql_username": "root",
+  "mysql_password": "qazwsxedcrfvtgb",
+  "mysql_database_name": "hrms_ubay",
+  "dtr_form":0,
+  "sb_dept_id": "1035",
+  "apk":"hrms_ubay.apk",
+  "window": "hrms_win.zip",
+  "sb":0
+}

@@ -1,0 +1,124 @@
+<html>
+<head>
+  <title>Editor</title>
+  <script src="config/global.js"></script>
+  <script src="public/js/main.js"></script>
+  <script src="public/js/jquery.js"></script>
+  <style>
+  * {
+    outline: none;
+  }
+  </style>
+</head>
+<body style="display: none;" id="body">
+  
+  <input type="date" id="from" />
+  <input type="date" id="to" />
+  <input type="text" id="emp_id" />
+  <button id="submit">View DTR</button>
+  <hr />
+  <div id="gen">
+  </div>
+  <script>
+  (function() {
+    /*
+     * Hide 
+     */
+    var body = document.getElementById("body");
+
+    var loadRole = function()
+    {
+      chttp(url_t + "/role", {})
+      .onload = function() {
+        var role = this.response;
+        if (role == '1') {
+          body.style.display = "block";
+        }
+      };
+    };
+
+    loadRole();
+
+    var submit = id_t("submit");
+    var from = id_t("from");
+    var to = id_t("to");
+    var emp_id = id_t("emp_id");
+    var gen = id_t("gen");
+
+    var gemp_id = "";
+
+    submit.onclick = function() {
+      chttp(url_t + "/editor/dtr/list", {
+        from: from.value,
+        to: to.value,
+        emp_id: emp_id.value
+      })
+      .onload = function() {
+        var fdata = JSON.parse(this.response);
+        var head = fdata.data;
+        gemp_id = head.enroll_id;
+        var data = fdata.date;
+        var i = 0;
+        var t = '';
+        t += '<div>name: ' + head['name'] + '</div>';
+        t += '<div>Position: ' + head['pos_title'] + '</div>';
+        t += '<br/><br/>';
+        t += '<table>';
+        t += '<tr>';
+          t += '<td>Date</td>';
+          t += '<td>am_in</td>';
+          t += '<td>am_out</td>';
+          t += '<td>pm_in</td>';
+          t += '<td>pm_out</td>';
+          t += '<td>info</td>';
+        t += '</tr>';     
+        while (true) {
+          if (typeof data[i] == "undefined") {
+            break;
+          }
+          var d = data[i];
+          t += '<tr>';
+            t += '<td>' + d["fdate"] + '</td>';
+            t += '<td><input type="text" style="width: 50px;" class="dt-input" fdate="' + d["fdate"] + '" value="' + d["am_in"] + '" rel="' + d["am_in"] + '" /></td>';
+            t += '<td><input type="text" style="width: 50px;" class="dt-input" fdate="' + d["fdate"] + '" value="' + d["am_out"] + '" rel="' + d["am_out"] + '" /></td>';
+            t += '<td><input type="text" style="width: 50px;" class="dt-input" fdate="' + d["fdate"] + '" value="' + d["pm_in"] + '" rel="' + d["pm_in"] + '" /></td>';
+            t += '<td><input type="text" style="width: 50px;" class="dt-input" fdate="' + d["fdate"] + '" value="' + d["pm_out"] + '" rel="' + d["pm_out"] + '" /></td>';
+            t += '<td><input style="width: 80px;" type="text" readonly="" value="' + d["day"] + '"></td>';
+          t += '</tr>';
+          i += 1;
+        }
+        t += '</table>';
+        gen.innerHTML = t;
+        var input = class_t("dt-input");
+        var input_len = input.length;
+        for (var i = 0; i < input_len; i++) {
+          input[i].onkeyup = function(e) {
+            if (e.keyCode == 13) {
+              var fdate = this.attributes.fdate.nodeValue;
+              var prev_hour = this.attributes.rel.nodeValue;  
+              var current_hour = this.value;
+              var me = this;
+              chttp(url_t + '/editor/dtr/save', {
+                fdate: fdate,
+                prev_hour: prev_hour,
+                current_hour: current_hour,
+                emp_id: gemp_id
+              })
+              .onload = function() {
+                var data = JSON.parse(this.response);
+                if (data.ok) {
+                  alert(data.msg);
+                  me.setAttribute("rel", current_hour);
+                } else {
+                  alert(data.msg);
+                }
+              };
+            }
+          };
+        }
+      };
+    };
+  })();
+  </script>
+</body>
+</html>

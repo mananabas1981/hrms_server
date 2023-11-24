@@ -1,0 +1,1 @@
+update emp_locator set status = '2'

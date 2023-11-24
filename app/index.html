@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Ubay Biometric</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      background-color: #eee;
+    }
+    table, th, td {
+      border: 1px solid;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .dev {
+      width: 200px;
+      height: 160px;
+      border: 1px solid #ddd;
+      display: inline-block;
+      margin-right: 5px;
+      border-radius: 10px;
+      box-shadow: 0 0 3px rgba(0,0,0,0.1);
+      padding: 10px;
+      margin-bottom: 5px;
+      background-color: white;
+    }
+    .dev div{
+      margin-top: 5px;
+      margin-bottom: 5px;
+    }
+    #top {
+      margin-top: 25vh;
+    }
+    .refresh {
+      width: 100%;
+      height: 30px;
+      cursor: pointer;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+    }
+    .status {
+      padding: 5px; 
+      border: 1px solid #ddd;
+      padding-left: 20px;
+      position: relative;
+    }
+    .s {
+      position: absolute;
+      top: 2px;
+      left: 2px;
+    }
+    .loader {
+      border: 1px solid #ddd;
+      border-top: 1px solid red;
+      width: 15px;
+      height: 15px;
+      border-radius: 50%;
+      display: inline-block;
+      animation: spin 0.5s ease infinite;
+    }
+    @keyframes spin {
+      from {
+        transform: rotate(0deg);
+      }
+      to {
+        transform: rotate(360deg);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="box">
+    <div id="top"></div>
+    <h5>Biometric Information</h5>
+    <div id="info">
+
+    </div>
+  </div>
+  <script>
+    window.onload = function() {
+      var iel = document.getElementById("info");
+      var t = "";
+
+      fetch("/list/fdsa", function() {
+      })
+      .then(data => data.text())
+      .then(data => {
+        var info = data.split("\r\n");
+        var info_len = info.length;
+        for (var i = 0; i < info_len; i++) {
+          var dev = info[i].split(";")
+          var status = dev[3] == 1 ? '<span style="color: green;">Connected</span>' : '<span style="color: orange;">Not Connected!</span>';
+          t += '<div class="dev">';
+            t += "<div>Name: " + dev[0] + "</div>";
+            t += "<div>Ip: " + dev[1] + "</div>";
+            t += "<div>Port: " + dev[2] + "</div>";
+            t += "<div>";
+            t += '<button rel="' + dev[1]  + '/' + dev[2] + '" class="refresh">Refresh</button>';
+            t += '<div class="status">';
+            t += status;
+            t += '</div>';
+            t += '</div>';
+          t += '</div>';
+        }
+        iel.innerHTML = t;
+        var ref = document.getElementsByClassName("refresh");
+        var reflen = ref.length, i = 0;
+        for (i = 0; i < reflen; i++) {
+          ref[i].addEventListener("click", function(e) {
+            if (confirm("Refresh this device?")) {
+              var code = e.target.attributes.rel.nodeValue;
+              var status  = e.target.parentElement.children[1];
+              status.innerHTML = '<div class="loader s"></div>Connecting...';
+              fetch("/devref/" + code)
+              .then(data => data.text())
+              .then(data => {
+                try {
+                  var js = JSON.parse(data);
+                  if (js.ok == 1) {
+                    status.innerHTML = '<span style="color: green;">Connected</span>';
+                  } else if (js.ok == 3) {
+                    alert("Device is still connecting please wait...");
+                  } else if (js.ok == 0) {
+                    status.innerHTML = '<span style="color: red;">Failed!</span>';
+                  } 
+                  else {
+                    status.innerHTML = "-";
+                  }
+                } catch(er) {
+                  console.log(er.toString());
+                }
+              })
+              
+            }
+          });
+        }
+     });
+    }
+  </script>
+</body>
+</html>

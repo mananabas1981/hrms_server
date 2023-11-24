@@ -1,0 +1,235 @@
+<html>
+<head>
+  <title>Editor</title>
+  <script src="config/global.js"></script>
+  <script src="public/js/main.js"></script>
+  <script src="public/js/jquery.js"></script>
+  <style>
+  * {
+    outline: none;
+  }
+  body, html {
+    margin: 0;
+    padding: 0;
+  }
+
+  </style>
+</head>
+<body style="display: none;" id="body">
+  
+  <input type="date" id="from" />
+  <input type="date" id="to" />
+  <input type="text" id="emp_id" />
+  <button id="submit">View DTR</button>
+  <hr />
+  <div id="gen">
+  </div>
+  <script>
+  (function() {
+    /*
+     * Hide 
+     */
+    var body = document.getElementById("body");
+
+    var loadRole = function()
+    {
+      chttp(url_t + "/role", {})
+      .onload = function() {
+        var role = this.response;
+        if (role == '1') {
+          body.style.display = "block";
+        }
+      };
+    };
+
+    loadRole();
+
+    var submit = id_t("submit");
+    var from = id_t("from");
+    var to = id_t("to");
+    var emp_id = id_t("emp_id");
+    var gen = id_t("gen");
+
+    var gemp_id = "";
+    let bio_id = "";
+    submit.onclick = function() {
+      loadDtr();
+    };
+
+    const loadDtr = function() {
+      chttp(url_t + "/editor/dtr/list", {
+        from: from.value,
+        to: to.value,
+        emp_id: emp_id.value
+      })
+      .onload = function() {
+        var fdata = JSON.parse(this.response);
+        const dtr = fdata["dtr"];
+        const head = fdata["header"];
+        bio_id = head["bio_id"];
+        let t = `
+          <style>
+            table, td, th {
+              border: 1px solid;
+            }
+
+            table {
+              width: 100%;
+              border-collapse: collapse;
+            }
+          </style>
+          <table>
+            <tr>  
+              <td>Date</td>
+              <td>am in</td>
+              <td>am out</td>
+              <td>pm in </td>
+              <td>pm out</td>
+              <td>Action</td>
+            </tr>
+        `;
+        let i = 0;
+        for (const x of dtr) {
+          const data = x[8];
+          const data_len = data.length;
+          
+          let select = `
+            <select class="list" style="width: 200px;">
+            <option value="">(${data_len}) Time</option>
+          `;
+          for (let a = 0; a < data_len; a++) {
+            select += `
+              <option value="${data[a][0]}">${data[a][0]}</option>
+            `;
+          }
+          select += `
+            </select>
+          `;
+
+          t += `
+            <tr>
+              <td>${x[0]}</td>
+              <td>${x[1]}</td>
+              <td>${x[2]}</td>
+              <td>${x[3]}</td>
+              <td>${x[4]}</td>
+              <td>
+                ${select}
+                <button class="view" rel="${i}" style="cursor: pointer; width: 100px;">
+                  remove
+                </button>
+                <input type="text" placeholder="" style="width: 100px;" />
+                <button class="save1" rel="${i}" style="cursor: pointer; width: 100px;">
+                  Insert
+                </button>
+              </td>
+            </tr>
+          `;
+          i++;
+        }
+        t += `</table>`;
+
+        gen.innerHTML = t;
+
+        let view  = class_t("view");
+        for (x of view) {
+          x.onclick = function() {
+            const index = this.attributes.rel.nodeValue;
+            const data = dtr[index];
+            const list = this.parentElement.children[0];
+            const button = this.parentElement.children[1];
+            const input = this.parentElement.children[2];
+            const save = this.parentElement.children[3];
+            
+            const value = list.value;
+
+            if (value == "") return;
+            
+            const fdata = {
+              emp_id: emp_id.value,
+              date: value,
+              bio_id: bio_id
+            };
+
+            if (confirm(`Remove ${value}?`)) {
+              const xml = chttp(url_t + "/editor/dtr/remove", fdata);
+              xml.onload = function() {
+                const data = JSON.parse(this.response);
+                loadDtr(); // recursive
+              };
+            }
+          }
+        }
+
+        let save = class_t("save1");
+        for (let z of save) {
+          z.onclick = function() {
+            const index = this.attributes.rel.nodeValue;
+            const data = dtr[index];
+            const list = this.parentElement.children[0];
+            const button = this.parentElement.children[1];
+            const input = this.parentElement.children[2];
+            const save = this.parentElement.children[3];
+            const value = list.value;
+            const inputval = input.value;
+            if (inputval == "") return;
+            if (!/^[0-2]{1}[0-9]{1}\:[0-5]{1}[0-9]{1}$/.test(inputval)) {
+              alert("Invalid time");
+            }
+
+            const fdata = {
+              emp_id: emp_id.value,
+              date: data[0],
+              bio_id: bio_id,
+              nvalue: inputval
+            };
+
+            const xml = chttp(url_t + "/editor/dtr/saved", fdata);
+            xml.onload = function() {
+              const data = JSON.parse(this.response);
+              if (data.ok == 1) {
+                alert(data.msg);
+                loadDtr();
+              } else {
+                alert(data.msg);
+              }
+
+            };
+
+          };
+        }
+
+
+        // var input = class_t("dt-input");
+        // var input_len = input.length;
+        // for (var i = 0; i < input_len; i++) {
+        //   input[i].onkeyup = function(e) {
+        //     if (e.keyCode == 13) {
+        //       var fdate = this.attributes.fdate.nodeValue;
+        //       var prev_hour = this.attributes.rel.nodeValue;  
+        //       var current_hour = this.value;
+        //       var me = this;
+        //       chttp(url_t + '/editor/dtr/save', {
+        //         fdate: fdate,
+        //         prev_hour: prev_hour,
+        //         current_hour: current_hour,
+        //         emp_id: gemp_id
+        //       })
+        //       .onload = function() {
+        //         var data = JSON.parse(this.response);
+        //         if (data.ok) {
+        //           alert(data.msg);
+        //           me.setAttribute("rel", current_hour);
+        //         } else {
+        //           alert(data.msg);
+        //         }
+        //       };
+        //     }
+        //   };
+        // }
+      };
+    };
+  })();
+  </script>
+</body>
+</html>
